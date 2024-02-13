@@ -85,7 +85,7 @@ def generate_light_exposure_vector(max_time, step_size, lights_on, lights_off, l
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     plt.close()
-    std_dev_range = list(range(0, 8))
+    std_dev_range = list(range(1, 8))
     average_amplitude = []
     for std_deviation in std_dev_range:
         model = SinglePopModel()
