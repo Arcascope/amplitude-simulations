@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.colors import Normalize
-
+import matplotlib
 from lco import integrate_model, forger_model, hannay_model
 
 hours_per_day = 24
@@ -142,21 +142,28 @@ def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_
     norm.autoscale_None([np.nan])  # Auto-scale to include NaN
     custom_cmap.set_bad(color='white')  # Set NaNs to white
 
-    ax.imshow(double_plotted_data, aspect='auto', cmap=custom_cmap, norm=norm)
+    font_size = 16
+    tick_font_size = 14
+
+    cax = ax.imshow(double_plotted_data, aspect='auto', cmap=custom_cmap, norm=norm)
+    cbar = fig.colorbar(cax, ax=ax)
+    cbar.ax.tick_params(labelsize=tick_font_size)
 
     # Adjust ticks for 48-hour x-axis
     dt_plot = 4
     x_ticks = np.arange(0, hours_per_day / timestep * 2, dt_plot / timestep)
 
     x_tick_labels = [str(int(x % hours_per_day)) for x in np.arange(0, hours_per_day * 2, dt_plot)]
-
-    ax.set_xlabel('Local time')
-    ax.set_ylabel('Day')
+    ax.set_xlabel('Local time', fontsize=font_size)
+    ax.set_ylabel('Day', fontsize=font_size)
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels(x_tick_labels)
+    ax.set_xticklabels(x_tick_labels, fontsize=tick_font_size)
     ax.set_yticks(np.arange(simulation_days))
-    ax.set_yticklabels(np.arange(1, simulation_days + 1))
+    ax.set_yticklabels(np.arange(1, simulation_days + 1), fontsize=tick_font_size)
     ax.grid(False)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
     plt.savefig(f"outputs/{plot_title}.png", dpi=300)
     plt.close()
     # plt.show()
@@ -171,6 +178,8 @@ def amplitude_derivative_cartesian(state_vector, d_state_vector):
 
 
 if __name__ == '__main__':
+    matplotlib.rcParams['font.family'] = 'Arial'
+
     num_days = 24
     regularity = 0.8
     dt = 0.1
@@ -196,6 +205,7 @@ if __name__ == '__main__':
                                       light,
                                       initial_condition,
                                       model)
+
 
                 # Calculate dR using chain rule
                 for i in range(np.shape(sol)[1] - 1):
