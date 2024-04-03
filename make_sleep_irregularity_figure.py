@@ -6,10 +6,12 @@ import matplotlib
 from lco import integrate_model, forger_model, hannay_model
 
 hours_per_day = 24
-colors = ["red", [0.8, 0.8, 0.8], "blue"]  # red for negative, gray for 0, blue for positive, light gray for zero
+# red for negative, gray for 0, blue for positive, light gray for zero
+colors = ["red", [0.8, 0.8, 0.8], "blue"]
 position = [0, 0.5, 1]
 
-custom_cmap = LinearSegmentedColormap.from_list("custom_cmap", list(zip(position, colors)))
+custom_cmap = LinearSegmentedColormap.from_list(
+    "custom_cmap", list(zip(position, colors)))
 
 
 def calculate_sleep_regularity_index(v, timestep):
@@ -65,7 +67,8 @@ def generate_sleep_schedule(simulation_days=14, dt=0.1, target_regularity=0.8, e
             day_start_idx = int(day * hours_per_day / dt)
 
             # Apply variability based on regularity_slider
-            bedtime_shift = np.random.uniform(-shift_radius * variability, shift_radius * variability)
+            bedtime_shift = np.random.uniform(-shift_radius *
+                                              variability, shift_radius * variability)
             bedtime = int((default_bedtime + bedtime_shift) % hours_per_day)
             waketime = (bedtime + total_sleep_hours) % hours_per_day
 
@@ -85,7 +88,8 @@ def generate_sleep_schedule(simulation_days=14, dt=0.1, target_regularity=0.8, e
                     fragmentation_length_hours = int(np.random.uniform(2, 4))
                     start_fragmentation_hour = int(np.random.uniform(bedtime,
                                                                      bedtime + total_sleep_hours - fragmentation_length_hours) % hours_per_day)
-                    start_fragmentation_idx = int(day_start_idx + start_fragmentation_hour / dt)
+                    start_fragmentation_idx = int(
+                        day_start_idx + start_fragmentation_hour / dt)
 
                     for hour in np.arange(0, fragmentation_length_hours, dt):
                         idx = int(start_fragmentation_idx + hour / dt)
@@ -121,45 +125,56 @@ def generate_sleep_schedule(simulation_days=14, dt=0.1, target_regularity=0.8, e
 def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_days=14, timestep=1.0, plot_title=''):
     sleep_wake_vector = sleep_wake_vector * 1.0
     sleep_wake_vector[sleep_wake_vector == 1.0] = np.nan
-    data = sleep_wake_vector.reshape((simulation_days, int(hours_per_day / timestep)))
+    data = sleep_wake_vector.reshape(
+        (simulation_days, int(hours_per_day / timestep)))
 
     amplitude_delta = np.insert(amplitude_delta, 0, 0)
     amplitude_delta = amplitude_delta.reshape(-1, 1)
 
-    scaled_data = amplitude_delta.reshape((simulation_days, int(hours_per_day / timestep))) * (1 + data)
+    scaled_data = amplitude_delta.reshape(
+        (simulation_days, int(hours_per_day / timestep))) * (1 + data)
 
-    double_plotted_data = np.zeros((simulation_days, int(hours_per_day / timestep * 2)))
+    double_plotted_data = np.zeros(
+        (simulation_days, int(hours_per_day / timestep * 2)))
 
-    for day in range(simulation_days - 1):  # Last day does not have a "next day" to concatenate
-        double_plotted_data[day] = np.concatenate((scaled_data[day], scaled_data[day + 1]))
-    double_plotted_data[-1] = np.concatenate((scaled_data[-1], np.nan * np.ones_like(scaled_data[-1])))
+    # Last day does not have a "next day" to concatenate
+    for day in range(simulation_days - 1):
+        double_plotted_data[day] = np.concatenate(
+            (scaled_data[day], scaled_data[day + 1]))
+    double_plotted_data[-1] = np.concatenate(
+        (scaled_data[-1], np.nan * np.ones_like(scaled_data[-1])))
 
     fig, ax = plt.subplots(figsize=(14, 7))
 
-    norm = Normalize(vmin=-0.075,
-                     vmax=0.075)
+    norm = Normalize(vmin=-10,
+                     vmax=10)
 
     norm.autoscale_None([np.nan])  # Auto-scale to include NaN
     custom_cmap.set_bad(color='white')  # Set NaNs to white
 
-    font_size = 16
-    tick_font_size = 14
+    font_size = 20
+    tick_font_size = 16
 
-    cax = ax.imshow(double_plotted_data, aspect='auto', cmap=custom_cmap, norm=norm)
+    cax = ax.imshow(double_plotted_data, aspect='auto',
+                    cmap=custom_cmap, norm=norm)
     cbar = fig.colorbar(cax, ax=ax)
     cbar.ax.tick_params(labelsize=tick_font_size)
+    cbar.ax.get_yaxis().labelpad = 25
+    cbar.ax.set_ylabel('%$\Delta R$', rotation=270, fontsize=30)
 
     # Adjust ticks for 48-hour x-axis
     dt_plot = 4
     x_ticks = np.arange(0, hours_per_day / timestep * 2, dt_plot / timestep)
 
-    x_tick_labels = [str(int(x % hours_per_day)) for x in np.arange(0, hours_per_day * 2, dt_plot)]
+    x_tick_labels = [str(int(x % hours_per_day))
+                     for x in np.arange(0, hours_per_day * 2, dt_plot)]
     ax.set_xlabel('Local time', fontsize=font_size)
     ax.set_ylabel('Day', fontsize=font_size)
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_tick_labels, fontsize=tick_font_size)
     ax.set_yticks(np.arange(simulation_days))
-    ax.set_yticklabels(np.arange(1, simulation_days + 1), fontsize=tick_font_size)
+    ax.set_yticklabels(np.arange(1, simulation_days + 1),
+                       fontsize=tick_font_size)
     ax.grid(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -192,20 +207,21 @@ if __name__ == '__main__':
                                                            dt=dt)
 
             print(f"Target SRI: {prescribed_regularity}")
-            print(f"Actual SRI: {calculate_sleep_regularity_index(schedule, dt)}")
+            print(
+                f"Actual SRI: {calculate_sleep_regularity_index(schedule, dt)}")
 
             # Since 1 = sleep, need to flip 0 and 1:
             light = (1 - schedule) * light_scalar
-            amplitude_change = []
+            amplitude_change_percent = []
 
             if model == 'forger':
-                initial_condition = np.array([-0.6717444, -0.85167686, 0.15397873])
+                initial_condition = np.array(
+                    [-0.6717444, -0.85167686, 0.15397873])
 
                 sol = integrate_model(timestamps,
                                       light,
                                       initial_condition,
                                       model)
-
 
                 # Calculate dR using chain rule
                 for i in range(np.shape(sol)[1] - 1):
@@ -213,11 +229,17 @@ if __name__ == '__main__':
                     d_state_light = forger_model(sol[:, i], light[i])
                     dR = amplitude_derivative_cartesian(state, d_state_light)
                     d_state_dark = forger_model(sol[:, i], 0)
-                    dR_dark = amplitude_derivative_cartesian(state, d_state_dark)
-                    amplitude_change.append(dR - dR_dark)  # Will be zero in the dark
+                    dR_dark = amplitude_derivative_cartesian(
+                        state, d_state_dark)
+
+                    # Will be zero in the dark
+
+                    R = np.sqrt(state[0] * state[0] + state[1] * state[1])
+                    amplitude_change_percent.append((dR - dR_dark) / R * 100)
 
             if model == 'hannay':
-                initial_condition = np.array([0.83656626, 146.6791648, 0.3335272])
+                initial_condition = np.array(
+                    [0.83656626, 146.6791648, 0.3335272])
 
                 sol = integrate_model(timestamps,
                                       light,
@@ -231,11 +253,15 @@ if __name__ == '__main__':
                     dR = d_state_light[0]
                     d_state_dark = hannay_model(sol[:, i], 0)
                     dR_dark = d_state_dark[0]
-                    amplitude_change.append(dR - dR_dark)  # Will be zero in the dark
+
+                    R = state[0]
+
+                    # Will be zero in the dark
+                    amplitude_change_percent.append((dR - dR_dark) / R * 100)
 
             title = f"{model}_{prescribed_regularity}"
             plot_actogram_double_plotted(schedule,
-                                         amplitude_change,
+                                         amplitude_change_percent,
                                          timestep=dt,
                                          simulation_days=num_days,
                                          plot_title=title)

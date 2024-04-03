@@ -67,7 +67,12 @@ def hannay_model(u, light):
     p = 1.5
     I0 = 9325.0
 
-    alpha_0_func = alpha_0 * pow(light, p) / (pow(light, p) + I0)
+    use_forger_light = False
+    if use_forger_light:
+        alpha_0_func = alph_forger(light)
+    else:
+        alpha_0_func = alpha_0 * pow(light, p) / (pow(light, p) + I0)
+
     Bhat = G * (1.0 - n) * alpha_0_func
     LightAmp = A1 * 0.5 * Bhat * (1.0 - pow(R, 4.0)) * np.cos(
         Psi + BetaL1) + A2 * 0.5 * Bhat * R * (1.0 - pow(R, 8.0)) * np.cos(
@@ -82,6 +87,9 @@ def hannay_model(u, light):
     du[1] = 2 * np.pi / tau + K / 2.0 * np.sin(Beta1) * (
             1 + pow(R, 4.0)) + LightPhase
     du[2] = 60.0 * (alpha_0_func * (1.0 - n) - delta * n)
+    if use_forger_light:
+        b = 0.013
+        du[2] = 60.0 * (alph_forger(light) * (1.0 - n) - b * n)
 
     return du
 

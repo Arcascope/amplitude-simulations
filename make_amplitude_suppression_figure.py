@@ -58,7 +58,7 @@ if __name__ == '__main__':
                                                                                step_size,
                                                                                lights_on,
                                                                                lights_off,
-                                                                               light_level=500,
+                                                                               light_level=1000,
                                                                                spread=spread_value / 2)
 
             sol = integrate_model(timestamps,
@@ -66,22 +66,23 @@ if __name__ == '__main__':
                                   initial_condition,
                                   model)
             if model == 'forger':
-                amplitude = np.sqrt(sol[0, :] * sol[0, :] + sol[1, :] * sol[1, :])
+                amplitude = np.sqrt(
+                    sol[0, :] * sol[0, :] + sol[1, :] * sol[1, :])
             else:
                 amplitude = sol[0, :]
             sol_len = len(sol)
             average_amplitude.append(np.mean(amplitude[sol_len // 2:]))
 
         plt.plot(spread_range, average_amplitude, 'ko')
-        title_font_size = 16
-        font_size = 14
+        title_font_size = 28
+        font_size = 22
         ax = plt.gca()
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        plt.title("Amplitude and sleep variability", fontsize=title_font_size)
+        # plt.title("Amplitude and sleep variability", fontsize=title_font_size)
 
-        plt.xlabel("Spread in wake and bed time")
+        plt.xlabel("Spread in wake and bed time", fontsize=font_size)
         plt.ylabel("Average model amplitude", fontsize=font_size)
         plt.savefig(f"outputs/{model}_spread_and_amplitude.png", dpi=300)
         plt.close()
