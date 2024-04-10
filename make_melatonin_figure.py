@@ -22,7 +22,10 @@ if __name__ == '__main__':
     sigma = 2
     x = np.linspace(-7, 7, 1000)
     y1 = gaussian(x, mu, sigma)  # First Gaussian
-    y2 = 0.6 * gaussian(x, mu, sigma)  # Second Gaussian, vertically squished
+
+    sigma_2 = 1.5
+    peak_difference = 0.8
+    y2 = peak_difference * 0.5 * gaussian(x, mu, sigma_2)  # Second Gaussian, vertically squished
 
     # Plot first Gaussian curve and fill
     ax.plot(x, y1, color='black')
@@ -48,14 +51,20 @@ if __name__ == '__main__':
             "Time elapses", fontsize=15, ha='center')
 
     delta_x = x[1] - x[0]
-    auc_y1 = np.sum(y1) * delta_x
-    auc_y2 = np.sum(y2) * delta_x
+    scalar = 200
+    auc_y1 = round(scalar * (np.sum(y1) * delta_x))
+    auc_y2 = round(scalar * (np.sum(y2) * delta_x))
     auc_ratio = auc_y2 / auc_y1
 
-    rightmost_x = 35
-    y_pos = 0.15
+    threshold = 0.01
+    scalar = 1 / 50
+    duration_y1 = scalar * np.sum(y1 > threshold)
+    duration_y2 = scalar * np.sum(y2 > threshold)
+
+    rightmost_x = 45
+    y_pos = 0.16
     rectangle_height = 0.03
-    rectangle_width = 6
+    rectangle_width = 8
     ax.text(rightmost_x + 0.9 * rectangle_width, y_pos *
             0.9, "=", fontsize=20, ha='center', va='center')
     ax.text(rightmost_x + 1.3 * rectangle_width, y_pos * 0.9,
@@ -68,17 +77,43 @@ if __name__ == '__main__':
                       alpha=0.5))
 
     ax.text(rightmost_x, y_pos + rectangle_height / 2,
-            "120 pg/ml", fontsize=15, ha='center', va='center')
+            f"{auc_y2} pg/ml", fontsize=15, ha='center', va='center')
 
     ax.add_patch(
         plt.Rectangle((rightmost_x - rectangle_width / 2, y_pos - 2 * rectangle_height), rectangle_width,
                       rectangle_height, color='skyblue', alpha=0.5))
 
     ax.text(rightmost_x, y_pos - 1.5 * rectangle_height,
-            "200 pg/ml", fontsize=15, ha='center', va='center')
+            f"{auc_y1} pg/ml", fontsize=15, ha='center', va='center')
 
     ax.plot([rightmost_x - rectangle_width / 2, rightmost_x + rectangle_width / 2],
             [y_pos - rectangle_height / 2, y_pos - rectangle_height / 2], color='black', linewidth=2)
+
+    y_pos = -0.05
+    ax.text(rightmost_x + 0.9 * rectangle_width, y_pos *
+            0.9, "=", fontsize=20, ha='center', va='center')
+    ax.text(rightmost_x + 1.3 * rectangle_width, y_pos * 0.9,
+            f"{(duration_y2/duration_y1):.2f}", fontsize=20, ha='center', va='center')
+    ax.text(rightmost_x + 0.6 * rectangle_width, 0.02, "Relative Melatonin\nDuration Change:", fontsize=12, ha='center',
+            va='center')
+
+    ax.add_patch(
+        plt.Rectangle((rightmost_x - rectangle_width / 2, y_pos), rectangle_width, rectangle_height, color='lightcoral',
+                      alpha=0.5))
+
+    ax.text(rightmost_x, y_pos + rectangle_height / 2,
+            f"{duration_y2:.1f} hours", fontsize=15, ha='center', va='center')
+
+    ax.add_patch(
+        plt.Rectangle((rightmost_x - rectangle_width / 2, y_pos - 2 * rectangle_height), rectangle_width,
+                      rectangle_height, color='skyblue', alpha=0.5))
+
+    ax.text(rightmost_x, y_pos - 1.5 * rectangle_height,
+            f"{duration_y1:.1f} hours", fontsize=15, ha='center', va='center')
+
+    ax.plot([rightmost_x - rectangle_width / 2, rightmost_x + rectangle_width / 2],
+            [y_pos - rectangle_height / 2, y_pos - rectangle_height / 2], color='black', linewidth=2)
+
 
     ax.axis('off')
     plt.savefig("outputs/melatonin.png", dpi=300)
