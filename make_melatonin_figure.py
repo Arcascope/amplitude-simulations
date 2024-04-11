@@ -11,7 +11,7 @@ def gaussian(x, mu, sigma):
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = 'Arial'
 
-    fig, ax = plt.subplots(figsize=(12, 4))
+    fig, ax = plt.subplots(figsize=(13.5, 4))
 
     first_position = -4
     offset = 25
@@ -91,8 +91,8 @@ if __name__ == '__main__':
 
     y_pos = -0.05
     ax.text(rightmost_x + 0.9 * rectangle_width, y_pos *
-            0.9, "=", fontsize=20, ha='center', va='center')
-    ax.text(rightmost_x + 1.3 * rectangle_width, y_pos * 0.9,
+            1.3, "=", fontsize=20, ha='center', va='center')
+    ax.text(rightmost_x + 1.3 * rectangle_width, y_pos * 1.3,
             f"{(duration_y2/duration_y1):.2f}", fontsize=20, ha='center', va='center')
     ax.text(rightmost_x + 0.6 * rectangle_width, 0.02, "Relative Melatonin\nDuration Change:", fontsize=12, ha='center',
             va='center')
