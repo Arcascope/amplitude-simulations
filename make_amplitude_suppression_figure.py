@@ -34,6 +34,14 @@ def generate_light_exposure_vector(duration, dt, lights_on_time, lights_off_time
     return time_vector, np.array(light_exposure)
 
 
+def circular_mean(radians):
+    sin_sum = np.sum(np.sin(radians))
+    cos_sum = np.sum(np.cos(radians))
+    mean_angle = np.arctan2(sin_sum, cos_sum)
+
+    return mean_angle
+
+
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = 'Arial'
 
@@ -43,6 +51,7 @@ if __name__ == '__main__':
     # TODO: Replace with circadian package
     for model in ['forger', 'hannay']:
         average_amplitude = []
+        average_phase = []
 
         for spread_value in spread_range:
             # Random IC; will wash out; works for either model
@@ -68,10 +77,13 @@ if __name__ == '__main__':
             if model == 'forger':
                 amplitude = np.sqrt(
                     sol[0, :] * sol[0, :] + sol[1, :] * sol[1, :])
+                phase = -np.arctan(sol[1, :], sol[0, :])
             else:
                 amplitude = sol[0, :]
+                phase = sol[1, :]
             sol_len = len(sol)
             average_amplitude.append(np.mean(amplitude[sol_len // 2:]))
+            average_phase.append(circular_mean(phase[sol_len // 2:]))
 
         plt.plot(spread_range, average_amplitude, 'ko')
         title_font_size = 28
@@ -80,9 +92,20 @@ if __name__ == '__main__':
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
 
-        # plt.title("Amplitude and sleep variability", fontsize=title_font_size)
-
         plt.xlabel("Spread in wake and bed time", fontsize=font_size)
         plt.ylabel("Average model amplitude", fontsize=font_size)
         plt.savefig(f"outputs/{model}_spread_and_amplitude.png", dpi=300)
+        plt.close()
+
+        average_phase = np.array(average_phase) * 24 / (2 * np.pi)
+        plt.plot(spread_range, average_phase, 'ko')
+        title_font_size = 28
+        font_size = 22
+        ax = plt.gca()
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+
+        plt.xlabel("Spread in wake and bed time", fontsize=font_size)
+        plt.ylabel("Average model phase (in hrs)", fontsize=font_size)
+        plt.savefig(f"outputs/{model}_spread_and_average_phase.png", dpi=300)
         plt.close()

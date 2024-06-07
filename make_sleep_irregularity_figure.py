@@ -122,7 +122,7 @@ def generate_sleep_schedule(simulation_days=14, dt=0.1, target_regularity=0.8, e
     return np.array(time), current_schedule
 
 
-def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_days=14, timestep=1.0, plot_title=''):
+def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_days=14, timestep=1.0, plot_title='', is_amplitude=True):
     sleep_wake_vector = sleep_wake_vector * 1.0
     sleep_wake_vector[sleep_wake_vector == 1.0] = np.nan
     data = sleep_wake_vector.reshape(
@@ -145,22 +145,30 @@ def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_
         (scaled_data[-1], np.nan * np.ones_like(scaled_data[-1])))
 
     fig, ax = plt.subplots(figsize=(14, 7))
+    custom_cmap.set_bad(color='white')  # Set NaNs to white
 
-    norm = Normalize(vmin=-10,
-                     vmax=10)
+    if is_amplitude:
+        norm = Normalize(vmin=-10,
+                         vmax=10)
+    else:
+        norm = Normalize(vmin=-0.15,
+                         vmax=0.15)
 
     norm.autoscale_None([np.nan])  # Auto-scale to include NaN
-    custom_cmap.set_bad(color='white')  # Set NaNs to white
+
+    cax = ax.imshow(double_plotted_data, aspect='auto',
+                    cmap=custom_cmap, norm=norm)
 
     font_size = 20
     tick_font_size = 16
 
-    cax = ax.imshow(double_plotted_data, aspect='auto',
-                    cmap=custom_cmap, norm=norm)
     cbar = fig.colorbar(cax, ax=ax)
     cbar.ax.tick_params(labelsize=tick_font_size)
     cbar.ax.get_yaxis().labelpad = 25
-    cbar.ax.set_ylabel('%$\Delta R$', rotation=270, fontsize=30)
+    if is_amplitude:
+        cbar.ax.set_ylabel('%$\Delta R$', rotation=270, fontsize=30)
+    else:
+        cbar.ax.set_ylabel('$\Delta \phi$', rotation=270, fontsize=30)
 
     # Adjust ticks for 48-hour x-axis
     dt_plot = 4
@@ -192,6 +200,16 @@ def amplitude_derivative_cartesian(state_vector, d_state_vector):
     return (x * dx + y * dy) / np.sqrt(x * x + y * y)
 
 
+def phase_derivative_cartesian(state_vector, d_state_vector):
+    x = state_vector[0]
+    dx = d_state_vector[0]
+    y = state_vector[1]
+    dy = d_state_vector[1]
+
+    denominator = (x * x + y * y)
+    return -x * dy / denominator + y * dx / denominator
+
+
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = 'Arial'
 
@@ -213,6 +231,7 @@ if __name__ == '__main__':
             # Since 1 = sleep, need to flip 0 and 1:
             light = (1 - schedule) * light_scalar
             amplitude_change_percent = []
+            phase_change = []
 
             if model == 'forger':
                 initial_condition = np.array(
@@ -228,14 +247,18 @@ if __name__ == '__main__':
                     state = sol[:, i]
                     d_state_light = forger_model(sol[:, i], light[i])
                     dR = amplitude_derivative_cartesian(state, d_state_light)
+                    dPsi = phase_derivative_cartesian(state, d_state_light)
+
                     d_state_dark = forger_model(sol[:, i], 0)
                     dR_dark = amplitude_derivative_cartesian(
                         state, d_state_dark)
+                    dPsi_dark = phase_derivative_cartesian(state, d_state_dark)
 
                     # Will be zero in the dark
-
                     R = np.sqrt(state[0] * state[0] + state[1] * state[1])
+                    psi = np.arctan2(state[1], state[0])
                     amplitude_change_percent.append((dR - dR_dark) / R * 100)
+                    phase_change.append(dPsi - dPsi_dark)
 
             if model == 'hannay':
                 initial_condition = np.array(
@@ -251,17 +274,32 @@ if __name__ == '__main__':
                     state = sol[:, i]
                     d_state_light = hannay_model(sol[:, i], light[i])
                     dR = d_state_light[0]
+                    dPsi = d_state_light[1]
+
                     d_state_dark = hannay_model(sol[:, i], 0)
                     dR_dark = d_state_dark[0]
+                    dPsi_dark = d_state_dark[1]
 
                     R = state[0]
+                    psi = np.mod(state[1], 2 * np.pi)
 
                     # Will be zero in the dark
                     amplitude_change_percent.append((dR - dR_dark) / R * 100)
+                    phase_change.append(dPsi - dPsi_dark)
 
-            title = f"{model}_{prescribed_regularity}"
+
+            title = f"{model}_{prescribed_regularity}_amplitude"
             plot_actogram_double_plotted(schedule,
                                          amplitude_change_percent,
                                          timestep=dt,
                                          simulation_days=num_days,
                                          plot_title=title)
+
+
+            title = f"{model}_{prescribed_regularity}_phase"
+            plot_actogram_double_plotted(schedule,
+                                         phase_change,
+                                         timestep=dt,
+                                         simulation_days=num_days,
+                                         plot_title=title,
+                                         is_amplitude=False)
