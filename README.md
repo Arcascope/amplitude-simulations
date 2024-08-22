@@ -1,3 +1,3 @@
-# Simulations of sleep variability and amplitude
+# Simulations of circadian amplitude
 
-These are simulations showcasing how sleep variability could suppress circadian amplitude.
+These are simulations showcasing how amplitude is predicted to change under different conditions.
