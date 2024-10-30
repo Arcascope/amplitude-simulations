@@ -1,4 +1,4 @@
-# Simulations of sleep variability and amplitude
+# Simulations of circadian amplitude
 
 This repository contains the code needed to generate the figures in "Beyond phase shifting: Amplitude as a target for circadian light interventions." by Olivia Walch, Franco Tavella, Jamie Zeitzer, and Renske Lok.
 

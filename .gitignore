@@ -1,3 +1,5 @@
+.ipynb_checkpoints/
+videos/
 *.npy
 .DS_Store
 *png
