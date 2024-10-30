@@ -99,7 +99,6 @@ if __name__ == '__main__':
 
         average_phase = np.array(average_phase) * 24 / (2 * np.pi)
         plt.plot(spread_range, average_phase, 'ko')
-        title_font_size = 28
         font_size = 22
         ax = plt.gca()
         ax.spines['top'].set_visible(False)

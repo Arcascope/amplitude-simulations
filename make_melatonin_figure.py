@@ -8,6 +8,7 @@ def gaussian(x, mu, sigma):
     return 1 / (sigma * np.sqrt(2 * np.pi)) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
 
 
+# This figure is an explainer for how we might define the success or failure of an amplitude intervention
 if __name__ == '__main__':
     matplotlib.rcParams['font.family'] = 'Arial'
 
@@ -116,5 +117,5 @@ if __name__ == '__main__':
             [y_pos - rectangle_height / 2, y_pos - rectangle_height / 2], color='black', linewidth=2)
 
     ax.axis('off')
-    plt.savefig("outputs/melatonin.png", dpi=500)
+    plt.savefig("outputs/figure_melatonin.png", dpi=500)
     plt.show()

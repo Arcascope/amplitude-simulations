@@ -4,6 +4,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.colors import Normalize
 import matplotlib
 from lco import integrate_model, forger_model, hannay_model
+import matplotlib.image as mpimg
 
 hours_per_day = 24
 # red for negative, gray for 0, blue for positive, light gray for zero
@@ -122,7 +123,8 @@ def generate_sleep_schedule(simulation_days=14, dt=0.1, target_regularity=0.8, e
     return np.array(time), current_schedule
 
 
-def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_days=14, timestep=1.0, plot_title='', is_amplitude=True):
+def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_days=14, timestep=1.0, plot_title='',
+                                 is_amplitude=True):
     sleep_wake_vector = sleep_wake_vector * 1.0
     sleep_wake_vector[sleep_wake_vector == 1.0] = np.nan
     data = sleep_wake_vector.reshape(
@@ -159,8 +161,8 @@ def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_
     cax = ax.imshow(double_plotted_data, aspect='auto',
                     cmap=custom_cmap, norm=norm)
 
-    font_size = 20
-    tick_font_size = 16
+    font_size = 40
+    tick_font_size = 36
 
     cbar = fig.colorbar(cax, ax=ax)
     cbar.ax.tick_params(labelsize=tick_font_size)
@@ -180,13 +182,15 @@ def plot_actogram_double_plotted(sleep_wake_vector, amplitude_delta, simulation_
     ax.set_ylabel('Day', fontsize=font_size)
     ax.set_xticks(x_ticks)
     ax.set_xticklabels(x_tick_labels, fontsize=tick_font_size)
-    ax.set_yticks(np.arange(simulation_days))
-    ax.set_yticklabels(np.arange(1, simulation_days + 1),
+
+    day_step = 5
+    ax.set_yticks(np.arange(0, simulation_days, day_step))
+    ax.set_yticklabels(np.arange(0, simulation_days, day_step),
                        fontsize=tick_font_size)
     ax.grid(False)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-
+    plt.tight_layout()
     plt.savefig(f"outputs/{plot_title}.png", dpi=300)
     plt.close()
     # plt.show()
@@ -287,14 +291,12 @@ if __name__ == '__main__':
                     amplitude_change_percent.append((dR - dR_dark) / R * 100)
                     phase_change.append(dPsi - dPsi_dark)
 
-
             title = f"{model}_{prescribed_regularity}_amplitude"
             plot_actogram_double_plotted(schedule,
                                          amplitude_change_percent,
                                          timestep=dt,
                                          simulation_days=num_days,
                                          plot_title=title)
-
 
             title = f"{model}_{prescribed_regularity}_phase"
             plot_actogram_double_plotted(schedule,
@@ -303,3 +305,23 @@ if __name__ == '__main__':
                                          simulation_days=num_days,
                                          plot_title=title,
                                          is_amplitude=False)
+
+    imgA = mpimg.imread('outputs/forger_1.0_amplitude.png')
+    imgB = mpimg.imread('outputs/forger_0.75_amplitude.png')
+
+    imgC = mpimg.imread('outputs/hannay_1.0_amplitude.png')
+    imgD = mpimg.imread('outputs/hannay_0.75_amplitude.png')
+
+    # Create a figure with 2x2 grid of subplots
+    fig, axes = plt.subplots(2, 2, constrained_layout=True, figsize=(10, 5))
+
+    # Place each image on the grid and add labels
+    images = [(imgA, "A"), (imgB, "B"), (imgC, "C"), (imgD, "D")]
+    for ax, (img, label) in zip(axes.flatten(), images):
+        ax.imshow(img)
+        ax.axis("off")  # Hide axes
+        ax.text(0.05, 1.05, label, transform=ax.transAxes, fontsize=20, color="black",
+                fontweight="bold")
+    plt.subplots_adjust(wspace=0.05, hspace=0)
+    plt.savefig("outputs/figure_sleep_regularity.png", dpi=500, bbox_inches='tight')
+    plt.show()
