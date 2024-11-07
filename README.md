@@ -11,3 +11,9 @@ Figure 3, which is an explainer image for two definitions of amplitude, is gener
 
 All figures can be made by running the Jupyter notebooks and then running `make_all_figures.py`
 
+
+
+The repository also contains some code for analyzing how different day lengths and light brightnesses affect circadian amplitude, as well as a simple model for melatonin production on permanent DST and permanent ST. These are in the `more_simulations` directory.
+
+
+
