@@ -17,7 +17,7 @@ def rk4_integrate(deriv, initial_state, t_span, dt, inputs):
 
     return times, np.array(states)
 
-
+# Circadian model parameters
 tau = 23.84
 K = 0.06358
 gamma = 0.024
@@ -33,12 +33,18 @@ delta = 0.0075
 p = 1.5
 I0 = 9325.0
 
+# Simple melatonin model parameters
+pineal_mel_growth = 0.1
+pineal_mel_decay = 0.8
+plasma_mel_growth = 0.5
+plasma_mel_decay = 0.8
 
 def deriv(state, light):
     R = state[0, ...]
     Psi = state[1, ...]
     n = state[2, ...]
     mel = state[3, ...]  # pineal melatonin
+    plasma_mel = state[4, ...]  # plasma melatonin
 
     alpha_0_func = alpha_0 * pow(light, p) / (pow(light, p) + I0)
     Bhat = G * (1.0 - n) * alpha_0_func
@@ -50,9 +56,8 @@ def deriv(state, light):
                          1.0 + pow(R, 8.0)) * np.sin(2.0 * Psi + BetaL2)
 
     mel_growth_rate = 0
-    mel_decay = 0.8
-    phi_on = np.pi - 3 * 2 * np.pi / 24
-    phi_off = phi_on + 2 * np.pi * 6 / 24
+    phi_on = np.pi - 6 * 2 * np.pi / 24  # DLMO ~6 hours before CBTmin
+    phi_off = phi_on + 2 * np.pi * 9 / 24  # Duration of mel synthesis
 
     dydt = np.zeros_like(state)
 
@@ -63,7 +68,8 @@ def deriv(state, light):
     dydt[2, ...] = 60.0 * (alpha_0_func * (1.0 - n) - delta * n)
 
     if phi_on < np.mod(Psi, 2 * np.pi) < phi_off:
-        mel_growth_rate = 0.1
-    dydt[3, ...] = mel_growth_rate - mel_decay * mel
+        mel_growth_rate = pineal_mel_growth
+    dydt[3, ...] = mel_growth_rate - pineal_mel_decay * mel
+    dydt[4, ...] = plasma_mel_growth * mel - plasma_mel * plasma_mel_decay
 
     return dydt
