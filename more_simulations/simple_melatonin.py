@@ -56,7 +56,7 @@ def deriv(state, light):
                          1.0 + pow(R, 8.0)) * np.sin(2.0 * Psi + BetaL2)
 
     mel_growth_rate = 0
-    phi_on = np.pi - 6 * 2 * np.pi / 24  # DLMO ~6 hours before CBTmin
+    phi_on = np.pi - 6.5 * 2 * np.pi / 24  # DLMO ~6.5 hours before CBTmin
     phi_off = phi_on + 2 * np.pi * 9 / 24  # Duration of mel synthesis
 
     dydt = np.zeros_like(state)

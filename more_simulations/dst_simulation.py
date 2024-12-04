@@ -6,7 +6,6 @@ from astral import LocationInfo
 from datetime import datetime, timedelta
 import pytz
 import numpy as np
-from scipy.ndimage import gaussian_filter1d
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -22,6 +21,8 @@ standard_time_color = mcolors.to_rgba(standard_time_color_hex, alpha=alpha)
 dst_color = mcolors.to_rgba(dst_color_hex, alpha=alpha)
 timezone_str = "America/New_York"
 
+VERBOSE = False
+
 
 def scale_lux(lux):
     return -1.5 + (np.log10(lux + 1) / 5)
@@ -32,27 +33,41 @@ def save_day_plot(day_data,
                   lux_array_day_dst,
                   melatonin_st_day,
                   lux_array_day_st,
-                  day_num, timezone):
+                  day_num,
+                  timezone,
+                  location,
+                  wake,
+                  bed):
     plt.figure(figsize=(10, 6))
 
     # Convert day_data.index to America/New_York timezone
     day_data.index = day_data.index.tz_convert(timezone)
 
-    scalar = 25  # Scalar for melatonin for graph
+    scalar = 35  # Scalar for melatonin for graph
 
     plt.fill_between(day_data.index, scalar * melatonin_st_day, label="Current melatonin",
                      color=standard_time_color, alpha=0.55)
 
-    plt.fill_between(day_data.index, scalar * melatonin_dst_day, label="Melatonin on pDST",
-                     color=dst_color, alpha=0.55)
+    if len(day_data.index) == len(melatonin_dst_day):
+        plt.fill_between(day_data.index, scalar * melatonin_dst_day, label="Melatonin on pDST",
+                         color=dst_color, alpha=0.55)
 
-    plt.plot(day_data.index, scale_lux(lux_array_day_dst), label="Light Schedule (pDST)", color=dst_color)
+    if len(day_data.index) == len(lux_array_day_dst):
+        plt.plot(day_data.index, scale_lux(lux_array_day_dst), label="Light Schedule (pDST)", color=dst_color)
     plt.plot(day_data.index, scale_lux(lux_array_day_st), label="Current Light Schedule", color=standard_time_color)
 
-    mel_fraction = melatonin_dst_day[19 * 60] / melatonin_st_day[19 * 60] * 100 - 100
+    mel_fraction = melatonin_dst_day[(12 + wake) * 60] / melatonin_st_day[(12 + wake) * 60] * 100 - 100
+
+    dlmo_thresh = 0.01
+    mel_onset_dst = np.argmax(melatonin_dst_day > dlmo_thresh) if np.any(melatonin_dst_day > dlmo_thresh) else None
+    mel_onset_st = np.argmax(melatonin_st_day > dlmo_thresh) if np.any(melatonin_st_day > dlmo_thresh) else None
 
     day_string = f"{day_data.index[0].strftime('%b. %-d %Y')}"
-    mel_string = f"\n{int(mel_fraction)}% more melatonin at wake-up"
+    mel_string = f"\n{int(mel_fraction)}% more melatonin at wake-up. "
+
+    if VERBOSE and mel_onset_st is not None and mel_onset_dst is not None:
+        mel_string += f"DLMO ST: {mel_onset_st / 60:.1f}, DST: {mel_onset_dst / 60:.1f}"
+
     _ = plt.text(
         0.5, 1.1, day_string, ha='center', va='center',
         fontsize=30, fontname="Arial", transform=plt.gca().transAxes
@@ -75,8 +90,8 @@ def save_day_plot(day_data,
     plt.gca().spines['left'].set_visible(False)
     plt.gca().get_yaxis().set_ticks([])  # Removes y-axis ticks
 
-    bedtime = day_data.index[0].replace(hour=23, minute=0)
-    alarm_time = day_data.index[0].replace(hour=7, minute=0) + timedelta(days=1)
+    bedtime = day_data.index[0].replace(hour=bed, minute=0)
+    alarm_time = day_data.index[0].replace(hour=wake, minute=0) + timedelta(days=1)
 
     plt.axvline(x=bedtime, color='purple', linestyle='--')
     plt.axvline(x=alarm_time, color='green', linestyle='--')
@@ -94,7 +109,7 @@ def save_day_plot(day_data,
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
     plt.tight_layout()
-    plt.savefig(f"output/{day_num:03d}.png")
+    plt.savefig(f"output/{location}_{wake}_{bed}_{day_num:03d}.png")
     plt.close()
 
 
@@ -105,26 +120,35 @@ if __name__ == "__main__":
     # Set the location for Boston with Longitude and Latitude
     boston = LocationInfo("Boston", "USA", "America/New_York", latitude=42.3601, longitude=-71.0589)
     miami = LocationInfo("Miami", "USA", "America/New_York", latitude=25.761681, longitude=-80.191788)
-
-    location = miami  # miami, boston are two options
+    timezone_str = "America/New_York"
     timezone = pytz.timezone(timezone_str)
 
+    wake = 6
+    bed = 22
+    wake_time = f"0{wake}:00"
+    work_start = "09:00"
+    work_end = "17:00"
+    bed_time = f"{bed - 1}:59"
+
+    location = boston  # miami, boston are two options
+    observer = location.observer
+
     # Define the date range of interest
-    start_date = datetime(2023, 4, 1)  # Example start date
-    end_date = datetime(2024, 3, 5)  # Example end date
+    start_date = datetime(2023, 7, 1)
+    end_date = datetime(2024, 2, 28)
 
     # Set the start date to noon in the specified timezone
     start_date = timezone.localize(datetime.combine(start_date, datetime.min.time()))
     end_date = timezone.localize(datetime.combine(end_date, datetime.min.time()))
     start_date_noon = start_date + timedelta(hours=12)
 
-    # Holder for DST flag
+    # Holder for results
     results = {"False": {}, "True": {}}
 
     index_to_remove = -1
-    work_lux = 300
+    work_lux = 500
     home_lux = 100
-    daylight_lux = 10000
+    daylight_lux = 1000  # You can set this equal to home_lux to sanity check that the differences are coming from DST
 
     for permanent_dst in [False, True]:
 
@@ -136,10 +160,10 @@ if __name__ == "__main__":
 
         lux_data = pd.DataFrame()
 
-        # Iterate over each day in the date range
         for single_date in pd.date_range(start_date, end_date):
+
             # Get sunrise and sunset times for the day in the location's time zone
-            s = sun(location.observer, date=single_date, tzinfo=timezone)
+            s = sun(observer, date=single_date, tzinfo=timezone)
             sunrise = s['sunrise']
             sunset = s['sunset']
             label = "DST" if permanent_dst else "ST"
@@ -152,7 +176,6 @@ if __name__ == "__main__":
 
             print(f"{label} {sunrise} {sunset}")
 
-            # Create a time series from midnight to 11:59 pm at 1-minute intervals
             day_series = pd.date_range(single_date,
                                        single_date + timedelta(days=1) - timedelta(minutes=1),
                                        freq='1min',
@@ -170,22 +193,22 @@ if __name__ == "__main__":
             # Apply lux rules based on the time of day and sunlight presence
             for current_time in day_series:
                 if datetime.strptime("00:00",
-                                     "%H:%M").time() <= current_time.time() < datetime.strptime("07:00",
+                                     "%H:%M").time() <= current_time.time() < datetime.strptime(wake_time,
                                                                                                 "%H:%M").time():
                     lux_values.append(0)
-                elif datetime.strptime("07:00",
-                                       "%H:%M").time() <= current_time.time() < datetime.strptime("09:00",
+                elif datetime.strptime(wake_time,
+                                       "%H:%M").time() <= current_time.time() < datetime.strptime(work_start,
                                                                                                   "%H:%M").time():
                     if sunrise <= current_time < sunset:
                         lux_values.append(daylight_lux)
                     else:
                         lux_values.append(home_lux)
-                elif datetime.strptime("09:00",
-                                       "%H:%M").time() <= current_time.time() < datetime.strptime("17:00",
+                elif datetime.strptime(work_start,
+                                       "%H:%M").time() <= current_time.time() < datetime.strptime(work_end,
                                                                                                   "%H:%M").time():
                     lux_values.append(work_lux)
-                elif datetime.strptime("17:00",
-                                       "%H:%M").time() <= current_time.time() < datetime.strptime("22:59",
+                elif datetime.strptime(work_end,
+                                       "%H:%M").time() <= current_time.time() < datetime.strptime(bed_time,
                                                                                                   "%H:%M").time():
                     if sunrise <= current_time < sunset:
                         lux_values.append(daylight_lux)
@@ -201,10 +224,7 @@ if __name__ == "__main__":
         lux_data.reset_index(drop=True, inplace=True)
         lux_data.head()
         lux_data.set_index("DateTime", inplace=True)
-
         lux_data = lux_data.reset_index()
-
-        # Get the start time (first entry in the DateTime column)
         start_time = lux_data["DateTime"].iloc[0]
 
         # Calculate hours since start for each timestamp
@@ -221,18 +241,15 @@ if __name__ == "__main__":
         lux_array = lux_array.astype(float)
 
         dt = time_array[1] - time_array[0]
-        initial_state = np.array([1, np.pi, 0.519, 0.0])
+        initial_state = np.array([1, np.pi + np.pi / 12 * 9, 0.519, 0.0, 0.0])
 
         times, states = rk4_integrate(deriv, initial_state, time_array, dt, lux_array)
         # output = np.mod(states[:, 1], 2 * np.pi)  # For debugging
-        output = states[:, 3]
+        melatonin = states[:, 4]  # Extract plasma melatonin
 
-        # Smoothing for our simple model of melatonin; same effect could be achieved with another compartment
-        sigma = 40  # Adjust this for more or less smoothing
-        smoothed_output = gaussian_filter1d(output, sigma=sigma)
         results[str(permanent_dst)] = {
             "times": times,
-            "smoothed_output": smoothed_output,
+            "smoothed_output": melatonin,
             "lux_data": lux_data,
             "lux_array": lux_array
         }
@@ -290,5 +307,8 @@ if __name__ == "__main__":
                       melatonin_st_day,
                       lux_array_day_st,
                       day_num,
-                      timezone)
+                      timezone,
+                      location.name,
+                      wake,
+                      bed)
         day_num += 1
