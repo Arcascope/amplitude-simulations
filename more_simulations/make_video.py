@@ -32,9 +32,9 @@ def images_to_video(location_name, wake, bed, start_number, end_number, folder_p
     print("Video created successfully!")
 
 
-location_name = "Miami"
-wake = 6
-bed = 22
+location_name = "Boston"
+wake = 7
+bed = 23
 images_to_video(
     location_name=location_name,
     wake=wake,
