@@ -2,12 +2,13 @@ import cv2
 import os
 
 
-def images_to_video(start_number, end_number, folder_path, output_video, fps=30):
+def images_to_video(location_name, wake, bed, start_number, end_number, folder_path, output_video, fps=30):
     frame_array = []
     img_size = None
 
     for i in range(start_number, end_number + 1):
-        img_filename = f"{i:03d}.png"  # Format number with leading zeros (e.g., '005.png')
+
+        img_filename = f"{location_name}_{wake}_{bed}_{i:03d}.png"
         img_path = os.path.join(folder_path, img_filename)
 
         if os.path.isfile(img_path):
@@ -31,11 +32,16 @@ def images_to_video(start_number, end_number, folder_path, output_video, fps=30)
     print("Video created successfully!")
 
 
-# Example usage
+location_name = "Miami"
+wake = 6
+bed = 22
 images_to_video(
-    start_number=200,
-    end_number=339,
+    location_name=location_name,
+    wake=wake,
+    bed=bed,
+    start_number=33,
+    end_number=241,
     folder_path="output/",
-    output_video="output_video.mp4",
+    output_video=f"{location_name}.mp4",
     fps=10
 )

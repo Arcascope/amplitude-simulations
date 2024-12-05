@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.patches import Rectangle
 
 from simple_melatonin import rk4_integrate, deriv
 
@@ -25,7 +26,7 @@ VERBOSE = False
 
 
 def scale_lux(lux):
-    return -1.5 + (np.log10(lux + 1) / 5)
+    return -2.5 + (np.log10(lux + 1) / 4)
 
 
 def save_day_plot(day_data,
@@ -45,7 +46,7 @@ def save_day_plot(day_data,
 
     scalar = 35  # Scalar for melatonin for graph
 
-    plt.fill_between(day_data.index, scalar * melatonin_st_day, label="Current melatonin",
+    plt.fill_between(day_data.index, scalar * melatonin_st_day, label="Melatonin on\ncurrent system",
                      color=standard_time_color, alpha=0.55)
 
     if len(day_data.index) == len(melatonin_dst_day):
@@ -53,8 +54,8 @@ def save_day_plot(day_data,
                          color=dst_color, alpha=0.55)
 
     if len(day_data.index) == len(lux_array_day_dst):
-        plt.plot(day_data.index, scale_lux(lux_array_day_dst), label="Light Schedule (pDST)", color=dst_color)
-    plt.plot(day_data.index, scale_lux(lux_array_day_st), label="Current Light Schedule", color=standard_time_color)
+        plt.plot(day_data.index, scale_lux(lux_array_day_dst), label="Light schedule (pDST)", color=dst_color)
+    plt.plot(day_data.index, scale_lux(lux_array_day_st), label="Current light\nschedule", color=standard_time_color)
 
     mel_fraction = melatonin_dst_day[(12 + wake) * 60] / melatonin_st_day[(12 + wake) * 60] * 100 - 100
 
@@ -63,7 +64,7 @@ def save_day_plot(day_data,
     mel_onset_st = np.argmax(melatonin_st_day > dlmo_thresh) if np.any(melatonin_st_day > dlmo_thresh) else None
 
     day_string = f"{day_data.index[0].strftime('%b. %-d %Y')}"
-    mel_string = f"\n{int(mel_fraction)}% more melatonin at wake-up. "
+    mel_string = f"\n{int(mel_fraction)}% more melatonin when alarm goes off"
 
     if VERBOSE and mel_onset_st is not None and mel_onset_dst is not None:
         mel_string += f"DLMO ST: {mel_onset_st / 60:.1f}, DST: {mel_onset_dst / 60:.1f}"
@@ -81,7 +82,7 @@ def save_day_plot(day_data,
     plt.xlabel("Current Local Time", fontname="Arial" if "Arial" in plt.rcParams['font.sans-serif'] else "Helvetica",
                fontsize=14)
     plt.xlim([day_data.index[0], day_data.index[0] + timedelta(hours=24)])  # Ensure x-axis covers one full day
-    plt.ylim([-2, 4])
+    plt.ylim([-3, 4])
     plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=2))
     plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=timezone))
 
@@ -104,12 +105,20 @@ def save_day_plot(day_data,
     plt.text(alarm_time, 3.4, 'Alarm', rotation=90, horizontalalignment="right", verticalalignment='center',
              color='green', fontsize=16)
     plt.xticks(fontsize=14)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.1, 1.05))
 
-    plt.legend()
+    # # Add a filled light gray rectangle in the upper-left corner
+    rect = Rectangle((0, 0.85), 0.2, 0.1, transform=plt.gca().transAxes, color=[0.8, 0.84, 0.8], zorder=2)
+    plt.gca().add_patch(rect)
+
+    # Add text to the rectangle
+    plt.gca().text(0.1, 0.9, location, transform=plt.gca().transAxes, horizontalalignment='center',
+                   verticalalignment='center', fontsize=20, zorder=3)
+
     plt.gca().spines['top'].set_visible(False)
     plt.gca().spines['right'].set_visible(False)
     plt.tight_layout()
-    plt.savefig(f"output/{location}_{wake}_{bed}_{day_num:03d}.png")
+    plt.savefig(f"output/{location}_{wake}_{bed}_{day_num:03d}.png", dpi=200)
     plt.close()
 
 
@@ -123,14 +132,14 @@ if __name__ == "__main__":
     timezone_str = "America/New_York"
     timezone = pytz.timezone(timezone_str)
 
-    wake = 6
-    bed = 22
+    wake = 7
+    bed = 23
     wake_time = f"0{wake}:00"
     work_start = "09:00"
     work_end = "17:00"
     bed_time = f"{bed - 1}:59"
 
-    location = boston  # miami, boston are two options
+    location = miami  # miami, boston are two options
     observer = location.observer
 
     # Define the date range of interest
@@ -148,7 +157,7 @@ if __name__ == "__main__":
     index_to_remove = -1
     work_lux = 500
     home_lux = 100
-    daylight_lux = 1000  # You can set this equal to home_lux to sanity check that the differences are coming from DST
+    daylight_lux = 2000  # You can set this equal to home_lux to sanity check that the differences are coming from DST
 
     for permanent_dst in [False, True]:
 
