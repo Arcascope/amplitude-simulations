@@ -17,3 +17,5 @@ The repository also contains some code for analyzing how different day lengths a
 
 
 
+
+`more_simulations/dst_phase_delay_by_month.py` compares permanent DST against permanent standard time month by month (Boston by default), reporting model DLMO under each and the resulting delay. It supports two light schedules: the original office schedule from `dst_simulation.py` and a commute schedule with window light at home and a dimmed hour before bed. Run `python dst_phase_delay_by_month.py --help` for options.
